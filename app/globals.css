@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg: 255 255 255;
+    --surface: 250 250 251;
+    --surface-2: 244 244 248;
+    --text: 17 17 24;
+    --text-muted: 100 100 115;
+    --border: 230 230 238;
+    --accent: 59 99 246;
+  }
+
+  .dark {
+    --bg: 12 12 16;
+    --surface: 20 20 26;
+    --surface-2: 28 28 36;
+    --text: 240 240 248;
+    --text-muted: 160 160 175;
+    --border: 40 40 52;
+    --accent: 139 153 255;
+  }
+
+  html,
+  body {
+    background: rgb(var(--bg));
+    color: rgb(var(--text));
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+}
+
+@layer components {
+  .bp-input {
+    @apply w-full px-4 py-3 rounded-2xl bg-[rgb(var(--surface))] border border-[rgb(var(--border))]
+           text-[rgb(var(--text))] placeholder:text-[rgb(var(--text-muted))]
+           focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-400
+           transition;
+  }
+
+  .bp-label {
+    @apply block text-sm font-medium text-[rgb(var(--text))] mb-1.5;
+  }
+
+  .bp-btn {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl
+           font-medium transition active:scale-[.98] disabled:opacity-50
+           disabled:cursor-not-allowed;
+  }
+
+  .bp-btn-primary {
+    @apply bp-btn bg-[rgb(var(--accent))] text-white hover:opacity-90;
+  }
+
+  .bp-btn-secondary {
+    @apply bp-btn bg-[rgb(var(--surface-2))] text-[rgb(var(--text))]
+           border border-[rgb(var(--border))] hover:bg-[rgb(var(--surface))];
+  }
+
+  .bp-btn-ghost {
+    @apply bp-btn text-[rgb(var(--text))] hover:bg-[rgb(var(--surface-2))];
+  }
+
+  .bp-card {
+    @apply bg-[rgb(var(--surface))] border border-[rgb(var(--border))]
+           rounded-3xl shadow-soft;
+  }
+
+  .bp-badge {
+    @apply inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full;
+  }
+
+  .bp-nav-link {
+    @apply px-3 py-2 rounded-xl text-sm font-medium text-[rgb(var(--text-muted))]
+           hover:text-[rgb(var(--text))] hover:bg-[rgb(var(--surface-2))] transition;
+  }
+
+  .bp-nav-link-active {
+    @apply text-[rgb(var(--text))] bg-[rgb(var(--surface-2))];
+  }
+}
+
+/* subtle scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--border));
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--text-muted));
+}
