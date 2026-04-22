@@ -107,7 +107,7 @@ export default function AdminDashboardPage() {
     <AdminSidebar>
       <div className="flex items-end justify-between flex-wrap gap-3 mb-6">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Admin overview</h1>
+          <h1 className="text-2xl md:text-3xl font-bold">Admin Overview</h1>
           <p className="text-[rgb(var(--text-muted))] text-sm">
             Review requests and track barangay activity.
           </p>

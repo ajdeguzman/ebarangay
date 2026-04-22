@@ -20,7 +20,7 @@ function toNotif(r) {
   };
 }
 
-export default function NotificationBell() {
+export default function NotificationBell({ align = "right" }) {
   const [notifications, setNotifications] = useState([]);
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -114,7 +114,7 @@ export default function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-80 bg-[rgb(var(--bg))] border border-[rgb(var(--border))] rounded-2xl shadow-2xl z-50 overflow-hidden animate-fade-in">
+        <div className={`absolute ${align === "left" ? "left-0" : "right-0"} mt-2 w-80 bg-[rgb(var(--bg))] border border-[rgb(var(--border))] rounded-2xl shadow-2xl z-50 overflow-hidden animate-fade-in`}>
           <div className="px-4 py-3 border-b border-[rgb(var(--border))] flex items-center justify-between">
             <div className="font-semibold text-sm">Notifications</div>
             {unread > 0 && (

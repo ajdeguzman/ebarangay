@@ -47,6 +47,41 @@ export default function RequestDocumentPage() {
     );
   }
 
+  const idUploaded = resident.idFrontUrl && resident.idBackUrl;
+  if (!resident.idVerified) {
+    return (
+      <>
+        <Header />
+        <main className="max-w-3xl mx-auto px-4 py-10 animate-fade-in">
+          <Link href="/dashboard" className="text-sm text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text))]">
+            ← Back to dashboard
+          </Link>
+          <div className="mt-3 mb-8">
+            <h1 className="text-3xl md:text-4xl font-bold">Request a document</h1>
+          </div>
+          <div className="bp-card p-8 text-center">
+            <div className="mx-auto h-14 w-14 rounded-2xl bg-[rgb(var(--surface-2))] flex items-center justify-center mb-4 text-[rgb(var(--text-muted))]">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M16 10h.01M12 10h.01M8 10h.01M2 14h20"/></svg>
+            </div>
+            <h2 className="text-lg font-semibold mb-2">ID verification required</h2>
+            {idUploaded ? (
+              <p className="text-[rgb(var(--text-muted))] text-sm max-w-sm mx-auto">
+                Your ID is currently <span className="font-medium text-amber-600 dark:text-amber-400">pending review</span> by the barangay office. You can submit requests once your identity has been verified.
+              </p>
+            ) : (
+              <p className="text-[rgb(var(--text-muted))] text-sm max-w-sm mx-auto">
+                You must upload a valid government-issued ID and have it verified by the barangay office before you can submit document requests.
+              </p>
+            )}
+            <Link href="/profile" className="bp-btn-primary inline-flex mt-6">
+              {idUploaded ? "View ID status" : "Upload your ID"}
+            </Link>
+          </div>
+        </main>
+      </>
+    );
+  }
+
   const selectedDoc = DOCUMENT_TYPES.find((d) => d.id === selected);
 
   const onSubmit = async (e) => {

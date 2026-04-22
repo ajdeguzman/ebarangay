@@ -59,7 +59,7 @@ export default function AdminSidebar({ children }) {
       >
         <div className="h-16 px-4 flex items-center justify-between border-b border-[rgb(var(--border))] flex-shrink-0">
           <Logo />
-          <NotificationBell />
+          <NotificationBell align="left" />
         </div>
         <nav className="p-3 space-y-1 flex-1 overflow-y-auto">
           {NAV.map((n) => {

@@ -163,7 +163,7 @@ export default function AdminSettingsPage() {
           <h3 className="font-semibold">Barangay logo</h3>
           <p className="text-sm text-[rgb(var(--text-muted))]">
             Upload a logo image (PNG, JPG, WebP, or SVG, max 2 MB). When no
-            logo is set the initials below are shown instead.
+            logo is set, the initials below are shown instead.
           </p>
           <div className="flex items-center gap-4">
             {/* Preview */}

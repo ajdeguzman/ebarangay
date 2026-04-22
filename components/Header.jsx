@@ -43,17 +43,25 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-40 backdrop-blur-lg bg-[rgb(var(--bg))]/75 border-b border-[rgb(var(--border))]">
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-        <Link href="/" className="flex items-center">
-          <Logo />
-        </Link>
+        {resident ? (
+          <div className="flex items-center">
+            <Logo />
+          </div>
+        ) : (
+          <Link href="/" className="flex items-center">
+            <Logo />
+          </Link>
+        )}
 
         <nav className="hidden md:flex items-center gap-1">
-          <Link
-            href="/"
-            className={`bp-nav-link ${isActive("/") ? "bp-nav-link-active" : ""}`}
-          >
-            Home
-          </Link>
+          {!resident && (
+            <Link
+              href="/"
+              className={`bp-nav-link ${isActive("/") ? "bp-nav-link-active" : ""}`}
+            >
+              Home
+            </Link>
+          )}
           {resident && (
             <Link
               href="/dashboard"
@@ -62,6 +70,14 @@ export default function Header() {
               }`}
             >
               Dashboard
+            </Link>
+          )}
+          {resident && (
+            <Link
+              href="/profile"
+              className={`bp-nav-link ${isActive("/profile") ? "bp-nav-link-active" : ""}`}
+            >
+              Profile
             </Link>
           )}
         </nav>
