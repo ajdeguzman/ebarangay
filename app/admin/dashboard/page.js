@@ -9,28 +9,39 @@ import {
   getResidents,
   updateRequestStatus,
   getResidentById,
+  getComplaints,
+  updateComplaintStatus,
 } from "@/lib/storage";
-import { DOCUMENT_TYPES, REQUEST_STATUSES } from "@/lib/barangay-config";
+import {
+  DOCUMENT_TYPES,
+  REQUEST_STATUSES,
+  COMPLAINT_CATEGORIES,
+  COMPLAINT_STATUSES,
+} from "@/lib/barangay-config";
 
 const TABS = [
-  { id: "overview", label: "Overview" },
-  { id: "requests", label: "Requests" },
+  { id: "overview",   label: "Overview"   },
+  { id: "requests",   label: "Requests"   },
+  { id: "complaints", label: "Complaints" },
 ];
 
 export default function AdminDashboardPage() {
   const { toast } = useToast();
   const [requests, setRequests] = useState([]);
   const [residents, setResidents] = useState([]);
+  const [complaints, setComplaints] = useState([]);
   const [tab, setTab] = useState("overview");
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [activeRequest, setActiveRequest] = useState(null);
+  const [activeComplaint, setActiveComplaint] = useState(null);
   const [loaded, setLoaded] = useState(false);
 
   const reload = async () => {
-    const [reqs, res] = await Promise.all([getRequests(), getResidents()]);
+    const [reqs, res, comps] = await Promise.all([getRequests(), getResidents(), getComplaints()]);
     setRequests(reqs);
     setResidents(res);
+    setComplaints(comps);
     setLoaded(true);
   };
 
@@ -78,6 +89,20 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const changeComplaintStatus = async (complaint, status, note) => {
+    try {
+      await updateComplaintStatus(complaint.id, status, note);
+      toast(`Complaint marked as ${COMPLAINT_STATUSES[status].label}.`, "success");
+      await reload();
+      setActiveComplaint(null);
+    } catch (err) {
+      toast(err.message || "Could not update status.", "error");
+    }
+  };
+
+  const categoryLabelOf = (id) =>
+    COMPLAINT_CATEGORIES.find((c) => c.id === id)?.label || id;
+
   return (
     <AdminSidebar>
       <div className="flex items-end justify-between flex-wrap gap-3 mb-6">
@@ -91,7 +116,7 @@ export default function AdminDashboardPage() {
           {TABS.map((t) => (
             <button
               key={t.id}
-              onClick={() => setTab(t.id)}
+              onClick={() => { setTab(t.id); setFilter("all"); setSearch(""); }}
               className={`px-3 py-1.5 text-sm rounded-lg font-medium transition ${
                 tab === t.id
                   ? "bg-[rgb(var(--surface))] shadow-soft"
@@ -120,8 +145,8 @@ export default function AdminDashboardPage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
             <Stat label="Residents registered" value={stats.residents} />
             <Stat label="Total requests" value={stats.total} />
-            <Stat label="Pending" value={stats.pending} />
-            <Stat label="Ready to release" value={stats.ready} />
+            <Stat label="Pending requests" value={stats.pending} />
+            <Stat label="Complaints filed" value={complaints.length} />
           </div>
 
           <div className="grid gap-4 lg:grid-cols-3">
@@ -221,12 +246,46 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
+      {loaded && tab === "complaints" && (
+        <div className="bp-card overflow-hidden">
+          <div className="p-5 border-b border-[rgb(var(--border))] flex items-center justify-between flex-wrap gap-3">
+            <div className="font-semibold">All complaints</div>
+            <div className="flex gap-2 flex-wrap">
+              <select
+                className="bp-input !py-2 !px-3 text-sm"
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+              >
+                <option value="all">All statuses</option>
+                {Object.entries(COMPLAINT_STATUSES).map(([k, v]) => (
+                  <option key={k} value={k}>{v.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <ComplaintTable
+            rows={complaints.filter((c) => filter === "all" || c.status === filter)}
+            categoryLabelOf={categoryLabelOf}
+            onOpen={setActiveComplaint}
+          />
+        </div>
+      )}
+
       {activeRequest && (
         <RequestDrawer
           request={activeRequest}
           onClose={() => setActiveRequest(null)}
           onStatusChange={changeStatus}
           docNameOf={docNameOf}
+        />
+      )}
+
+      {activeComplaint && (
+        <ComplaintDrawer
+          complaint={activeComplaint}
+          onClose={() => setActiveComplaint(null)}
+          onStatusChange={changeComplaintStatus}
+          categoryLabelOf={categoryLabelOf}
         />
       )}
     </AdminSidebar>
@@ -506,6 +565,218 @@ function Field({ label, children }) {
     <div>
       <div className="text-xs text-[rgb(var(--text-muted))]">{label}</div>
       <div className="mt-0.5">{children}</div>
+    </div>
+  );
+}
+
+const COMPLAINT_STATUS_ORDER = ["pending", "under_review", "resolved", "dismissed"];
+
+function ComplaintTable({ rows, categoryLabelOf, onOpen }) {
+  const [sort, setSort] = useState({ col: "createdAt", dir: "desc" });
+
+  const toggle = (col) =>
+    setSort((s) =>
+      s.col === col ? { col, dir: s.dir === "asc" ? "desc" : "asc" } : { col, dir: "asc" }
+    );
+
+  const sorted = useMemo(() => {
+    const { col, dir } = sort;
+    return [...rows].sort((a, b) => {
+      let av, bv;
+      if (col === "residentName") { av = a.residentName?.toLowerCase() ?? ""; bv = b.residentName?.toLowerCase() ?? ""; }
+      else if (col === "subject") { av = a.subject?.toLowerCase() ?? ""; bv = b.subject?.toLowerCase() ?? ""; }
+      else if (col === "category") { av = categoryLabelOf(a.category).toLowerCase(); bv = categoryLabelOf(b.category).toLowerCase(); }
+      else if (col === "createdAt") { av = a.createdAt; bv = b.createdAt; }
+      else if (col === "status") { av = COMPLAINT_STATUS_ORDER.indexOf(a.status); bv = COMPLAINT_STATUS_ORDER.indexOf(b.status); }
+      if (av < bv) return dir === "asc" ? -1 : 1;
+      if (av > bv) return dir === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [rows, sort, categoryLabelOf]);
+
+  const COLS = [
+    { key: "residentName", label: "Resident" },
+    { key: "subject",      label: "Subject"   },
+    { key: "category",     label: "Category"  },
+    { key: "createdAt",    label: "Filed"     },
+    { key: "status",       label: "Status"    },
+  ];
+
+  if (rows.length === 0)
+    return (
+      <div className="p-10 text-center text-sm text-[rgb(var(--text-muted))]">
+        No complaints to show.
+      </div>
+    );
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="text-left text-[rgb(var(--text-muted))] border-b border-[rgb(var(--border))]">
+            {COLS.map(({ key, label }) => (
+              <th key={key} className="font-medium px-5 py-3">
+                <button
+                  onClick={() => toggle(key)}
+                  className="inline-flex items-center gap-1 hover:text-[rgb(var(--text))] transition"
+                >
+                  {label}
+                  <SortIcon active={sort.col === key} dir={sort.dir} />
+                </button>
+              </th>
+            ))}
+            <th />
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.map((c) => (
+            <tr
+              key={c.id}
+              className="border-b border-[rgb(var(--border))] last:border-0 hover:bg-[rgb(var(--surface-2))]"
+            >
+              <td className="px-5 py-3 font-medium">{c.residentName}</td>
+              <td className="px-5 py-3 max-w-xs truncate">{c.subject}</td>
+              <td className="px-5 py-3 text-[rgb(var(--text-muted))]">{categoryLabelOf(c.category)}</td>
+              <td className="px-5 py-3 text-[rgb(var(--text-muted))]">
+                {new Date(c.createdAt).toLocaleDateString()}
+              </td>
+              <td className="px-5 py-3">
+                <StatusBadge status={c.status} statuses={COMPLAINT_STATUSES} />
+              </td>
+              <td className="px-5 py-3 text-right">
+                <button
+                  onClick={() => onOpen(c)}
+                  className="bp-btn-ghost !py-1.5 !px-3 text-sm"
+                >
+                  Manage
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function ComplaintDrawer({ complaint, onClose, onStatusChange, categoryLabelOf }) {
+  const [resident, setResident] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getResidentById(complaint.residentId)
+      .then((r) => !cancelled && setResident(r))
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [complaint.residentId]);
+
+  const actions = [
+    {
+      show: complaint.status === "pending",
+      label: "Start investigation",
+      onClick: () => onStatusChange(complaint, "under_review", "Complaint is now under review."),
+      primary: true,
+    },
+    {
+      show: complaint.status === "under_review",
+      label: "Mark resolved",
+      onClick: () => {
+        const note = prompt("Resolution notes?") || "Complaint resolved.";
+        onStatusChange(complaint, "resolved", note);
+      },
+      primary: true,
+    },
+    {
+      show: complaint.status === "pending" || complaint.status === "under_review",
+      label: "Dismiss",
+      onClick: () => {
+        const note = prompt("Reason for dismissal?") || "Dismissed by admin.";
+        onStatusChange(complaint, "dismissed", note);
+      },
+      danger: true,
+    },
+  ];
+
+  return (
+    <div className="fixed inset-0 z-50 flex">
+      <div className="absolute inset-0 bg-black/40 animate-fade-in" onClick={onClose} />
+      <div className="ml-auto w-full max-w-md bg-[rgb(var(--bg))] h-full shadow-2xl flex flex-col animate-slide-up">
+        <div className="p-5 border-b border-[rgb(var(--border))] flex items-center justify-between">
+          <div>
+            <div className="text-xs text-[rgb(var(--text-muted))]">
+              Complaint {complaint.id.slice(0, 8)}
+            </div>
+            <div className="font-semibold">{complaint.subject}</div>
+          </div>
+          <button onClick={onClose} className="bp-btn-ghost !py-2 !px-3">✕</button>
+        </div>
+        <div className="p-5 space-y-4 overflow-y-auto flex-1">
+          <div>
+            <div className="text-xs text-[rgb(var(--text-muted))]">Status</div>
+            <StatusBadge status={complaint.status} statuses={COMPLAINT_STATUSES} />
+          </div>
+          <Field label="Resident">
+            {complaint.residentName}
+            {resident && (
+              <div className="text-xs text-[rgb(var(--text-muted))]">
+                {resident.email} · {resident.contact}
+                <br />
+                Purok {resident.purok} · {resident.streetAddress}
+              </div>
+            )}
+          </Field>
+          <Field label="Category">{categoryLabelOf(complaint.category)}</Field>
+          <Field label="Description">
+            <p className="text-sm leading-relaxed">{complaint.description}</p>
+          </Field>
+          <Field label="Filed">
+            {new Date(complaint.createdAt).toLocaleString()}
+          </Field>
+          <div>
+            <div className="text-xs text-[rgb(var(--text-muted))] mb-2">History</div>
+            <ol className="space-y-3">
+              {(complaint.history || []).map((h, i) => (
+                <li key={i} className="flex gap-3">
+                  <div className="h-2 w-2 mt-2 rounded-full bg-[rgb(var(--text))] shrink-0" />
+                  <div>
+                    <div className="text-sm font-medium">
+                      {COMPLAINT_STATUSES[h.status]?.label || h.status}
+                    </div>
+                    <div className="text-xs text-[rgb(var(--text-muted))]">
+                      {new Date(h.at).toLocaleString()}
+                    </div>
+                    {h.note && <div className="text-sm mt-0.5">{h.note}</div>}
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </div>
+        <div className="p-5 border-t border-[rgb(var(--border))] space-y-2">
+          {actions
+            .filter((a) => a.show)
+            .map((a, i) => (
+              <button
+                key={i}
+                onClick={a.onClick}
+                className={
+                  a.primary
+                    ? "bp-btn-primary w-full"
+                    : a.danger
+                    ? "bp-btn-secondary w-full !text-rose-600 dark:!text-rose-300"
+                    : "bp-btn-secondary w-full"
+                }
+              >
+                {a.label}
+              </button>
+            ))}
+          {actions.filter((a) => a.show).length === 0 && (
+            <div className="text-sm text-[rgb(var(--text-muted))] text-center">
+              No further actions available for this status.
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

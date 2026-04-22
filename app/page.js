@@ -37,7 +37,7 @@ export default function HomePage() {
           </h1>
           <p className="mt-6 text-lg text-[rgb(var(--text-muted))] max-w-xl mx-auto">
             {cfg?.tagline ||
-              "A modern portal for every juan and juana."}{" "}
+              "A modern portal for every juan."}{" "}
             Register once, request documents from home, and track status in
             real time.
           </p>

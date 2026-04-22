@@ -13,8 +13,8 @@ const toneClass = {
   rose: "bg-rose-100 text-rose-800 dark:bg-rose-500/15 dark:text-rose-300",
 };
 
-export default function StatusBadge({ status }) {
-  const info = REQUEST_STATUSES[status] || { label: status, tone: "slate" };
+export default function StatusBadge({ status, statuses = REQUEST_STATUSES }) {
+  const info = statuses[status] || REQUEST_STATUSES[status] || { label: status, tone: "slate" };
   return (
     <span className={`bp-badge ${toneClass[info.tone] || toneClass.slate}`}>
       <span className="h-1.5 w-1.5 rounded-full bg-current opacity-70" />

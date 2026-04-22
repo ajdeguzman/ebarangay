@@ -8,10 +8,11 @@ import StatusBadge from "@/components/StatusBadge";
 import {
   getCurrentResident,
   getRequestsByResident,
+  getComplaintsByResident,
   uploadResidentAvatar,
   removeResidentAvatar,
 } from "@/lib/storage";
-import { DOCUMENT_TYPES } from "@/lib/barangay-config";
+import { DOCUMENT_TYPES, COMPLAINT_CATEGORIES, COMPLAINT_STATUSES } from "@/lib/barangay-config";
 import { useToast } from "@/components/Toast";
 
 export default function DashboardPage() {
@@ -19,6 +20,7 @@ export default function DashboardPage() {
   const { toast } = useToast();
   const [resident, setResident] = useState(null);
   const [requests, setRequests] = useState([]);
+  const [complaints, setComplaints] = useState([]);
   const [loaded, setLoaded] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const avatarInputRef = useRef(null);
@@ -32,10 +34,14 @@ export default function DashboardPage() {
           if (!cancelled) router.replace("/login?reason=no-profile");
           return;
         }
-        const reqs = await getRequestsByResident(r.id);
+        const [reqs, comps] = await Promise.all([
+          getRequestsByResident(r.id),
+          getComplaintsByResident(r.id),
+        ]);
         if (cancelled) return;
         setResident(r);
         setRequests(reqs);
+        setComplaints(comps);
         setLoaded(true);
       } catch {
         if (!cancelled) router.replace("/login");
@@ -100,6 +106,9 @@ export default function DashboardPage() {
 
   const docNameOf = (id) =>
     DOCUMENT_TYPES.find((d) => d.id === id)?.name || id;
+
+  const categoryLabelOf = (id) =>
+    COMPLAINT_CATEGORIES.find((c) => c.id === id)?.label || id;
 
   const initials = `${resident.firstName?.[0] || ""}${resident.lastName?.[0] || ""}`;
 
@@ -171,9 +180,14 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <Link href="/dashboard/request" className="bp-btn-primary">
-            + New request
-          </Link>
+          <div className="flex gap-2 flex-wrap">
+            <Link href="/dashboard/complaint" className="bp-btn-secondary">
+              + File a complaint
+            </Link>
+            <Link href="/dashboard/request" className="bp-btn-primary">
+              + New request
+            </Link>
+          </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-4 mb-8">
@@ -192,7 +206,17 @@ export default function DashboardPage() {
           />
         </div>
 
-        <section className="bp-card overflow-hidden">
+        {complaints.length > 0 && (
+          <div className="grid gap-4 md:grid-cols-2 mb-8">
+            <Stat label="Complaints filed" value={complaints.length} />
+            <Stat
+              label="Under review"
+              value={complaints.filter((c) => c.status === "under_review").length}
+            />
+          </div>
+        )}
+
+        <section className="bp-card overflow-hidden mb-6">
           <div className="p-6 border-b border-[rgb(var(--border))] flex items-center justify-between">
             <div>
               <h2 className="font-semibold">Your document requests</h2>
@@ -235,6 +259,56 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <StatusBadge status={r.status} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="bp-card overflow-hidden">
+          <div className="p-6 border-b border-[rgb(var(--border))] flex items-center justify-between">
+            <div>
+              <h2 className="font-semibold">Your complaints</h2>
+              <p className="text-sm text-[rgb(var(--text-muted))]">
+                Track complaints you've filed with the barangay.
+              </p>
+            </div>
+            <Link href="/dashboard/complaint" className="bp-btn-ghost !py-1.5 !px-3 text-sm">
+              + File new
+            </Link>
+          </div>
+
+          {complaints.length === 0 ? (
+            <div className="p-12 text-center">
+              <div className="mx-auto h-14 w-14 rounded-2xl bg-[rgb(var(--surface-2))] flex items-center justify-center mb-3 text-[rgb(var(--text-muted))]">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              </div>
+              <div className="font-semibold">No complaints filed</div>
+              <p className="text-sm text-[rgb(var(--text-muted))] mt-1 mb-4">
+                Use the complaints form to report an issue to the barangay.
+              </p>
+              <Link href="/dashboard/complaint" className="bp-btn-primary">
+                File a complaint
+              </Link>
+            </div>
+          ) : (
+            <ul className="divide-y divide-[rgb(var(--border))]">
+              {complaints.map((c) => (
+                <li
+                  key={c.id}
+                  className="p-5 flex items-start justify-between gap-4"
+                >
+                  <div>
+                    <div className="font-semibold">{c.subject}</div>
+                    <div className="text-sm text-[rgb(var(--text-muted))] mt-0.5">
+                      {categoryLabelOf(c.category)}
+                    </div>
+                    <div className="text-xs text-[rgb(var(--text-muted))] mt-2">
+                      Ref: {c.id.slice(0, 8)} · Filed{" "}
+                      {new Date(c.createdAt).toLocaleString()}
+                    </div>
+                  </div>
+                  <StatusBadge status={c.status} statuses={COMPLAINT_STATUSES} />
                 </li>
               ))}
             </ul>
