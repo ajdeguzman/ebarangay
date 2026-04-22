@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Logo from "./Logo";
 import ThemeToggle from "./ThemeToggle";
+import NotificationBell from "./NotificationBell";
 import {
   getCurrentResident,
   logoutResident,
@@ -67,6 +68,7 @@ export default function Header() {
 
         <div className="flex items-center gap-2">
           <ThemeToggle />
+          {resident && <NotificationBell />}
           {resident ? (
             <>
               <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-[rgb(var(--surface-2))]">

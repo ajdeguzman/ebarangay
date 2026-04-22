@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Logo from "./Logo";
 import ThemeToggle from "./ThemeToggle";
+import NotificationBell from "./NotificationBell";
 import { getAdminSession, logoutAdmin } from "@/lib/storage";
 
 const NAV = [
@@ -56,8 +57,9 @@ export default function AdminSidebar({ children }) {
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="h-16 px-4 flex items-center border-b border-[rgb(var(--border))] flex-shrink-0">
+        <div className="h-16 px-4 flex items-center justify-between border-b border-[rgb(var(--border))] flex-shrink-0">
           <Logo />
+          <NotificationBell />
         </div>
         <nav className="p-3 space-y-1 flex-1 overflow-y-auto">
           {NAV.map((n) => {
@@ -115,7 +117,7 @@ export default function AdminSidebar({ children }) {
             ☰
           </button>
           <Logo />
-          <div className="w-8" />
+          <NotificationBell />
         </div>
         <div className="p-4 md:p-8">{children}</div>
       </div>
